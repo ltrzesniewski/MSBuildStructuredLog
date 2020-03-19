@@ -307,12 +307,12 @@ namespace StructuredLogViewer
 
         private static bool IsUnder(NodeQueryMatcher matcher, SearchResult result)
         {
-            if (!(result.Node is ParentedNode parented))
+            if (!(result.Node is BaseNode node))
             {
                 return true;
             }
 
-            foreach (var parent in parented.GetParentChainExcludingThis())
+            foreach (var parent in node.GetParentChainExcludingThis())
             {
                 if (matcher.IsMatch(parent) != null)
                 {

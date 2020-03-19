@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Microsoft.Build.Logging.StructuredLogger;
@@ -69,7 +69,7 @@ namespace StructuredLogViewer
 
             foreach (var node in resultSet)
             {
-                var current = (node as ParentedNode)?.Parent;
+                var current = node.Parent;
                 while (current != null && ancestorNodes.Add(current))
                 {
                     current = current.Parent;

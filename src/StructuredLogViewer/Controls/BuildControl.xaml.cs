@@ -117,7 +117,7 @@ namespace StructuredLogViewer.Controls
             sortChildrenItem.Click += (s, a) => SortChildren();
             copyNameItem.Click += (s, a) => CopyName();
             copyValueItem.Click += (s, a) => CopyValue();
-            viewItem.Click += (s, a) => Invoke(treeView.SelectedItem as ParentedNode);
+            viewItem.Click += (s, a) => Invoke(treeView.SelectedItem as BaseNode);
             openFileItem.Click += (s, a) => OpenFile();
             preprocessItem.Click += (s, a) => Preprocess(treeView.SelectedItem as IPreprocessable);
             runItem.Click += (s, a) => Run(treeView.SelectedItem as Task, debug: false);
@@ -437,7 +437,7 @@ Recent:
 
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
-            var node = treeView.SelectedItem as ParentedNode;
+            var node = treeView.SelectedItem as BaseNode;
             var visibility = node is NameValueNode ? Visibility.Visible : Visibility.Collapsed;
             copyNameItem.Visibility = visibility;
             copyValueItem.Visibility = visibility;
@@ -677,11 +677,9 @@ Recent:
 
         private void ResultsList_SelectionChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            var proxy = searchLogControl.ResultsList.SelectedItem as ProxyNode;
-            if (proxy != null)
+            if (searchLogControl.ResultsList.SelectedItem is ProxyNode proxy)
             {
-                var item = proxy.Original as ParentedNode;
-                if (item != null)
+                if (proxy.Original is BaseNode item)
                 {
                     SelectItem(item);
                 }
@@ -690,8 +688,8 @@ Recent:
 
         public void UpdateBreadcrumb(object item)
         {
-            var parentedNode = item as ParentedNode;
-            IEnumerable<object> chain = parentedNode?.GetParentChainIncludingThis();
+            var node = item as BaseNode;
+            IEnumerable<object> chain = node?.GetParentChainIncludingThis();
             if (chain == null || !chain.Any())
             {
                 chain = new[] { item };
@@ -750,7 +748,7 @@ Recent:
 
         public string InitialSearchText { get; set; }
 
-        public void SelectItem(ParentedNode item)
+        public void SelectItem(BaseNode item)
         {
             var parentChain = item.GetParentChainIncludingThis();
             if (!parentChain.Any())
@@ -787,7 +785,7 @@ Recent:
         {
             ch = char.ToLowerInvariant(ch);
 
-            var selectedItem = treeView.SelectedItem as ParentedNode;
+            var selectedItem = treeView.SelectedItem as BaseNode;
             if (selectedItem == null)
             {
                 return;
@@ -828,7 +826,7 @@ Recent:
                 goto search;
             }
 
-            string GetText(ParentedNode node)
+            string GetText(BaseNode node)
             {
                 if (node is IHasTitle hasTitle)
                 {
@@ -980,7 +978,7 @@ Recent:
             }
         }
 
-        private void MoveSelectionOut(ParentedNode node)
+        private void MoveSelectionOut(BaseNode node)
         {
             var parent = node.Parent;
             if (parent == null)
@@ -1054,7 +1052,7 @@ Recent:
             }
         }
 
-        private bool CanView(ParentedNode node)
+        private bool CanView(BaseNode node)
         {
             return node is AbstractDiagnostic
                 || node is Project
@@ -1065,12 +1063,12 @@ Recent:
                 || (node is TextNode tn && tn.IsTextShortened);
         }
 
-        private bool CanOpenFile(ParentedNode node)
+        private bool CanOpenFile(BaseNode node)
         {
             return node is Import i && sourceFileResolver.HasFile(i.ImportedProjectFilePath);
         }
 
-        private bool Invoke(ParentedNode treeNode)
+        private bool Invoke(BaseNode treeNode)
         {
             if (treeNode == null)
             {
@@ -1219,10 +1217,10 @@ Recent:
             return DisplayFile(sourceFilePath, line + 1);
         }
 
-        private static ParentedNode GetNode(RoutedEventArgs args)
+        private static BaseNode GetNode(RoutedEventArgs args)
         {
             var treeViewItem = args.Source as TreeViewItem;
-            var node = treeViewItem?.DataContext as ParentedNode;
+            var node = treeViewItem?.DataContext as BaseNode;
             return node;
         }
 
@@ -1261,9 +1259,9 @@ Recent:
             {
                 TreeNode parent = root;
 
-                if (!includeDuration && result.Node is ParentedNode parentedNode)
+                if (!includeDuration && result.Node is BaseNode node)
                 {
-                    var project = parentedNode.GetNearestParent<Project>();
+                    var project = node.GetNearestParent<Project>();
                     if (project != null)
                     {
                         var projectProxy = root.GetOrCreateNodeWithName<ProxyNode>(project.Name);
