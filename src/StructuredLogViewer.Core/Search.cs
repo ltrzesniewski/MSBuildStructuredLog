@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Microsoft.Build.Logging.StructuredLogger;
@@ -33,15 +33,6 @@ namespace StructuredLogViewer
             return resultSet;
         }
 
-        public static void ClearSearchResults(Build build)
-        {
-            build.VisitAllChildren<BaseNode>(node =>
-            {
-                node.IsSearchResult = false;
-                node.ContainsSearchResult = false;
-            });
-        }
-
         private void Visit(object node, NodeQueryMatcher matcher, CancellationTokenSource cancellationTokenSource)
         {
             if (cancellationTokenSource.IsCancellationRequested)
@@ -64,23 +55,14 @@ namespace StructuredLogViewer
 
         private static void MarkSearchResults(Build build, IEnumerable<BaseNode> searchResults)
         {
-            var resultSet = new HashSet<BaseNode>(searchResults);
-            var ancestorNodes = new HashSet<BaseNode>();
+            build.SearchResults = new SearchResultSet(searchResults);
+            build.UpdateSearchResultMarker(build.SearchResults);
+        }
 
-            foreach (var node in resultSet)
-            {
-                var current = node.Parent;
-                while (current != null && ancestorNodes.Add(current))
-                {
-                    current = current.Parent;
-                }
-            }
-
-            build.VisitAllChildren<BaseNode>(node =>
-            {
-                node.IsSearchResult = resultSet.Contains(node);
-                node.ContainsSearchResult = ancestorNodes.Contains(node);
-            });
+        public static void ClearSearchResults(Build build)
+        {
+            build.SearchResults = SearchResultSet.Empty;
+            build.ClearSearchResultMarker();
         }
     }
 }

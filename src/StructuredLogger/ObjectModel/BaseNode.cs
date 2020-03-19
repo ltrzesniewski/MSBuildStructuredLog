@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 namespace Microsoft.Build.Logging.StructuredLogger
@@ -53,18 +53,43 @@ namespace Microsoft.Build.Logging.StructuredLogger
         public bool IsSearchResult
         {
             get => HasFlag(NodeFlags.SearchResult);
-            set => SetFlag(NodeFlags.SearchResult, value);
+            private set => SetFlag(NodeFlags.SearchResult, value);
         }
 
         public bool ContainsSearchResult
         {
             get => HasFlag(NodeFlags.ContainsSearchResult);
-            set => SetFlag(NodeFlags.ContainsSearchResult, value);
+            private set => SetFlag(NodeFlags.ContainsSearchResult, value);
+        }
+
+        internal bool SearchResultFlagsOutOfDate
+        {
+            get => HasFlag(NodeFlags.SearchResultFlagsOutOfDate);
+            private set => SetFlagSilent(NodeFlags.SearchResultFlagsOutOfDate, value);
+        }
+
+        public virtual void UpdateSearchResultMarker(SearchResultSet results)
+        {
+            SearchResultFlagsOutOfDate = false;
+            IsSearchResult = results.IsSearchResult(this);
+            ContainsSearchResult = results.ContainsSearchResult(this);
+        }
+
+        public void InvalidateSearchResultMarker()
+        {
+            SearchResultFlagsOutOfDate = true;
+        }
+
+        public virtual void ClearSearchResultMarker()
+        {
+            SearchResultFlagsOutOfDate = false;
+            IsSearchResult = false;
+            ContainsSearchResult = false;
         }
 
         private protected bool HasFlag(NodeFlags flag) => (flags & flag) == flag;
 
-        private protected void SetFlag(NodeFlags flag, bool isSet, [CallerMemberName] string propertyName = null)
+        private protected bool SetFlag(NodeFlags flag, bool isSet, [CallerMemberName] string propertyName = null)
         {
             var newFlags = isSet
                 ? flags | flag
@@ -72,11 +97,19 @@ namespace Microsoft.Build.Logging.StructuredLogger
 
             if (flags == newFlags)
             {
-                return;
+                return false;
             }
 
             flags = newFlags;
             RaisePropertyChanged(propertyName);
+            return true;
+        }
+
+        private void SetFlagSilent(NodeFlags flag, bool isSet)
+        {
+            flags = isSet
+                ? flags | flag
+                : flags & ~flag;
         }
 
         public BaseNode GetRoot()

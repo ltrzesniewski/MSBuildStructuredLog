@@ -16,7 +16,13 @@ namespace Microsoft.Build.Logging.StructuredLogger
         public bool IsExpanded
         {
             get => HasFlag(NodeFlags.Expanded);
-            set => SetFlag(NodeFlags.Expanded, value);
+            set
+            {
+                if (SetFlag(NodeFlags.Expanded, value) && value)
+                {
+                    UpdateChildrenSearchResultMarker();
+                }
+            }
         }
 
         public virtual string ToolTip
@@ -37,6 +43,69 @@ namespace Microsoft.Build.Logging.StructuredLogger
                 }
 
                 return children;
+            }
+        }
+
+        public override void UpdateSearchResultMarker(SearchResultSet results)
+        {
+            base.UpdateSearchResultMarker(results);
+
+            if (HasChildren)
+            {
+                foreach (var child in Children)
+                {
+                    if (child is BaseNode childNode)
+                    {
+                        if (!ContainsSearchResult)
+                        {
+                            childNode.ClearSearchResultMarker();
+                        }
+                        else if (IsExpanded)
+                        {
+                            childNode.UpdateSearchResultMarker(results);
+                        }
+                        else
+                        {
+                            childNode.InvalidateSearchResultMarker();
+                        }
+                    }
+                }
+            }
+        }
+
+        private void UpdateChildrenSearchResultMarker()
+        {
+            if (HasChildren)
+            {
+                SearchResultSet results = null;
+
+                foreach (var child in Children)
+                {
+                    if (child is BaseNode childNode)
+                    {
+                        if (childNode.SearchResultFlagsOutOfDate)
+                        {
+                            results ??= (GetRoot() as Build)?.SearchResults ?? SearchResultSet.Empty;
+                            childNode.UpdateSearchResultMarker(results);
+                        }
+                    }
+                }
+            }
+        }
+
+        public override void ClearSearchResultMarker()
+        {
+            base.ClearSearchResultMarker();
+
+            if (HasChildren)
+            {
+                foreach (var child in Children)
+                {
+                    if (child is BaseNode childNode)
+                    {
+                        childNode.ClearSearchResultMarker();
+                    }
+                }
             }
         }
 

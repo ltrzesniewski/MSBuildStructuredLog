@@ -15,6 +15,13 @@ namespace Microsoft.Build.Logging.StructuredLogger
         public string LogFilePath { get; set; }
         public byte[] SourceFilesArchive { get; set; }
 
+        public SearchResultSet SearchResults { get; set; } = SearchResultSet.Empty;
+
+        public Build()
+        {
+            IsExpanded = true;
+        }
+
         public override string ToString() => $"Build {(Succeeded ? "succeeded" : "failed")}. Duration: {this.DurationText}";
 
         public TreeNode FindDescendant(int index)
